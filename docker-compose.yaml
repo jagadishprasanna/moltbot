@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  openclaw-gateway:
+    image: ghcr.io/openclaw/openclaw:latest
+    # OR build from your Dockerfile:
+    # build: .
+    container_name: openclaw-gateway
+    ports:
+      - "8080:8080"
+    volumes:
+      - openclaw-data:/data
+      - ./workspace:/data/workspace
+    environment:
+      - PORT=8080
+      - SETUP_PASSWORD=${SETUP_PASSWORD}
+      - OPENCLAW_STATE_DIR=/data/.openclaw
+      - OPENCLAW_WORKSPACE_DIR=/data/workspace
+      - OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  openclaw-cli:
+    image: ghcr.io/openclaw/openclaw:latest
+    container_name: openclaw-cli
+    volumes:
+      - openclaw-data:/data
+    environment:
+      - OPENCLAW_STATE_DIR=/data/.openclaw
+    entrypoint: ["node", "dist/index.js"]
+    profiles:
+      - cli
+
+volumes:
+  openclaw-data:
+    driver: local
